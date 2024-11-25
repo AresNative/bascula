@@ -1,0 +1,3 @@
+
+
+``pyinstaller --onefile --noconsole programa.py``  // --nombre de archivo: check-bascula.py
