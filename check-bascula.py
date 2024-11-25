@@ -3,47 +3,68 @@ import os
 import time
 
 # Configuración del puerto serial
-puerto = 'COM3'  # Cambia esto al puerto de tu báscula
+puerto = 'COM1'  # Cambia esto al puerto de tu báscula
 baud_rate = 9600  # Configuración de baudios de la báscula
 
-def reiniciar_intelisis_tools():
+def reiniciar_todo_intelisis():
     """
-    Reinicia el programa Intelisis Tools cerrando el proceso si está en ejecución
-    y abriéndolo nuevamente.
+    Reinicia todos los procesos relacionados con Intelisis.
     """
     try:
-        # Cerrar Intelisis Tools si está abierto
-        os.system("taskkill /F /IM IntelisisTools.exe")  # Cambia IntelisisTools.exe si el nombre del proceso es diferente
-        print("Intelisis Tools cerrado.")
+        print("Buscando y cerrando procesos relacionados con Intelisis...")
+
+        # Comando para cerrar todos los procesos que contengan "Intelisis" en el nombre
+        os.system("taskkill /F /IM *Intelisis*")  # Mata cualquier proceso relacionado con Intelisis
+        print("Procesos de Intelisis finalizados.")
 
         # Esperar un momento antes de reiniciar
         time.sleep(2)
 
-        # Reiniciar Intelisis Tools
-        os.system("start IntelisisPOSToolV2.exe")  # Asegúrate de que esté en la PATH o incluye la ruta completa
-        print("Intelisis Tools reiniciado.")
-    except Exception as e:
-        print(f"Error al reiniciar Intelisis Tools: {e}")
+        # Reiniciar Intelisis Tools o cualquier otro programa necesario
+        print("Reiniciando Intelisis Tools...")
+        os.system("IntelisisPOSToolV2.exe")  # Cambia el nombre o la ruta según sea necesario
+        os.system("IntelisisPos.exe")
+        # Puedes añadir otros programas relacionados aquí si es necesario
+        # os.system("start OtroProgramaRelacionado.exe")
 
-def leer_peso():
+        print("Procesos de Intelisis reiniciados correctamente.")
+    except Exception as e:
+        print(f"Error al reiniciar Intelisis: {e}")
+def ejecutar_comando_sql():
     """
-    Lee el peso desde la báscula y guarda los datos en un archivo.
+    Ejecuta un comando SQL para eliminar los datos de la tabla IntelisisET.
+    """
+    try:
+        print("Ejecutando comando SQL para eliminar datos de IntelisisET...")
+        # Comando SQL usando sqlcmd
+        comando = 'sqlcmd -S CAJA02 -U sa -P intelisis1 -Q "DELETE IntelisisET;"'
+        resultado = os.system(comando)
+        
+        # Verificar el resultado del comando
+        if resultado == 0:
+            print("Datos eliminados correctamente de IntelisisET.")
+        else:
+            print("Error al ejecutar el comando SQL. Verifica la conexión y los parámetros.")
+    except Exception as e:
+        print(f"Error al ejecutar el comando SQL: {e}")
+def leer_peso_en_tiempo_real():
+    """
+    Lee el peso desde la báscula en tiempo real y lo muestra en la consola.
     """
     try:
         bascula = serial.Serial(puerto, baud_rate, timeout=1)
         print(f"Conectado a la báscula en {puerto} a {baud_rate} baudios")
+        print("Leyendo peso en tiempo real... Presiona Ctrl+C para detener.")
 
-        with open('peso.txt', 'a') as archivo:  # Archivo para guardar el peso
-            while True:
-                datos = bascula.readline().decode('utf-8').strip()
-                if datos:  # Si hay datos recibidos
-                    print(f"Peso recibido: {datos}")
-                    archivo.write(f"{datos}\n")  # Guardar el peso en el archivo
-                    archivo.flush()
+        while True:
+            datos = bascula.readline().decode('utf-8').strip()
+            if datos:  # Si hay datos recibidos
+                # Mostrar el peso en tiempo real en la consola
+                print(f"\rPeso: {datos} kg", end='', flush=True)  # Sobrescribe la línea en la consola
     except serial.SerialException as e:
-        print(f"Error de conexión: {e}")
+        print(f"\nError de conexión: {e}")
     except KeyboardInterrupt:
-        print("Programa interrumpido manualmente.")
+        print("\nPrograma detenido manualmente.")
     finally:
         if 'bascula' in locals() and bascula.is_open:
             bascula.close()
@@ -52,5 +73,6 @@ def leer_peso():
 # Ejecución del programa
 if __name__ == "__main__":
     print("Iniciando programa...")
-    reiniciar_intelisis_tools()  # Llama al reinicio de Intelisis Tools
-    leer_peso()  # Inicia la lectura de la báscula
+    reiniciar_todo_intelisis()  # Reinicia todos los procesos de Intelisis
+    ejecutar_comando_sql()  # Ejecuta el comando SQL para limpiar la tabla IntelisisET
+    leer_peso_en_tiempo_real()  # Inicia la lectura de la báscula en tiempo real
